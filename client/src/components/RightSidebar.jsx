@@ -46,7 +46,7 @@ const RightSidebar = ({ mobile = false }) => {
                 <button
                     type="button"
                     onClick={() => setIsProfileOpen(false)}
-                    className="absolute top-3 right-3 icon-btn bg-[var(--color-card)]/90 backdrop-blur p-2"
+                    className="absolute top-4 right-4 icon-btn bg-[var(--color-card)]/90 backdrop-blur p-2"
                     aria-label="Close profile"
                 >
                     <X className="w-5 h-5" />
@@ -89,9 +89,6 @@ const RightSidebar = ({ mobile = false }) => {
                     )}
                 </div>
 
-                <Button variant="secondary" className="mt-6 w-full" onClick={() => setIsProfileOpen(false)}>
-                    Close panel
-                </Button>
             </div>
         </Wrapper>
     );

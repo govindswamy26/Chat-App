@@ -110,11 +110,87 @@ export const ChatProvider = ({ children })=>{
             if (data.success) {
                 setMessages(prevMessages => prevMessages.map(message => message._id === messageId ? { ...message, isDeleted: true } : message));
                 toast.success(data.message);
+                return true;
             } else toast.error(data.message);
         } catch (error) {
             toast.error(error.message);
         }
+        return false;
     }
+
+    const getScheduledMessages = async () => {
+        try {
+            const { data } = await axios.get("/api/scheduled");
+            if (data.success) {
+                return Array.isArray(data.scheduledMessages) ? data.scheduledMessages : [];
+            }
+            toast.error(data.message);
+            return [];
+        } catch (error) {
+            toast.error(error.message);
+            return [];
+        }
+    };
+
+    const scheduleMessage = async (receiverId, payload) => {
+        try {
+            const { data } = await axios.post(`/api/scheduled/send/${receiverId}`, payload);
+            if (data.success) {
+                toast.success("Message scheduled successfully.");
+                return data.scheduledMessage;
+            }
+            toast.error(data.message);
+            return null;
+        } catch (error) {
+            toast.error(error.message);
+            return null;
+        }
+    };
+
+    const updateScheduledMessage = async (messageId, payload) => {
+        try {
+            const { data } = await axios.put(`/api/scheduled/${messageId}`, payload);
+            if (data.success) {
+                toast.success("Scheduled message updated.");
+                return data.scheduledMessage;
+            }
+            toast.error(data.message);
+            return null;
+        } catch (error) {
+            toast.error(error.message);
+            return null;
+        }
+    };
+
+    const cancelScheduledMessage = async (messageId) => {
+        try {
+            const { data } = await axios.delete(`/api/scheduled/${messageId}`);
+            if (data.success) {
+                toast.success(data.message);
+                return true;
+            }
+            toast.error(data.message);
+            return false;
+        } catch (error) {
+            toast.error(error.message);
+            return false;
+        }
+    };
+
+    const sendScheduledMessageNow = async (messageId) => {
+        try {
+            const { data } = await axios.post(`/api/scheduled/send-now/${messageId}`);
+            if (data.success) {
+                toast.success("Message sent immediately.");
+                return data.deliveredMessage;
+            }
+            toast.error(data.message);
+            return null;
+        } catch (error) {
+            toast.error(error.message);
+            return null;
+        }
+    };
 
     // function to subscribe to messages for selected user
     const subscribeToMessages = async () =>{
@@ -153,8 +229,29 @@ export const ChatProvider = ({ children })=>{
     },[socket, selectedUser])
 
     const value = {
-        messages, users, selectedUser, getUsers, getFriendData, sendFriendRequest, respondToFriendRequest, friendData, getMessages, sendMessage, deleteMessage, setSelectedUser, unseenMessages, setUnseenMessages, isMessagesLoading, isProfileOpen, setIsProfileOpen
-    }
+        messages,
+        users,
+        selectedUser,
+        getUsers,
+        getFriendData,
+        sendFriendRequest,
+        respondToFriendRequest,
+        friendData,
+        getMessages,
+        sendMessage,
+        deleteMessage,
+        getScheduledMessages,
+        scheduleMessage,
+        updateScheduledMessage,
+        cancelScheduledMessage,
+        sendScheduledMessageNow,
+        setSelectedUser,
+        unseenMessages,
+        setUnseenMessages,
+        isMessagesLoading,
+        isProfileOpen,
+        setIsProfileOpen,
+    };
 
     return (
     <ChatContext.Provider value={value}>

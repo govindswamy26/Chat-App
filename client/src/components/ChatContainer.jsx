@@ -7,6 +7,7 @@ import { AuthContext } from "../../context/AuthContext";
 import ChatHeader from "./chat/ChatHeader";
 import MessageBubble from "./chat/MessageBubble";
 import MessageComposer from "./chat/MessageComposer";
+import ScheduledMessagesPanel from "./chat/ScheduledMessagesPanel";
 import EmptyState from "./ui/EmptyState";
 import { ConfirmModal } from "./ui/Modal";
 import { MessageListSkeleton } from "./ui/Skeleton";
@@ -17,11 +18,17 @@ const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const ChatContainer = () => {
     const {
         messages,
+        setMessages,
         selectedUser,
         setSelectedUser,
         sendMessage,
         deleteMessage,
         getMessages,
+        getScheduledMessages,
+        scheduleMessage,
+        updateScheduledMessage,
+        cancelScheduledMessage,
+        sendScheduledMessageNow,
         isMessagesLoading,
         isProfileOpen,
         setIsProfileOpen,
@@ -39,12 +46,15 @@ const ChatContainer = () => {
 
     const [input, setInput] = useState("");
     const [aiSummary, setAiSummary] = useState(null);
+    const [aiError, setAiError] = useState("");
     const [isRecording, setIsRecording] = useState(false);
     const [isUploadingVoice, setIsUploadingVoice] = useState(false);
     const [recordingSeconds, setRecordingSeconds] = useState(0);
     const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
     const [isPolishing, setIsPolishing] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [scheduledMessages, setScheduledMessages] = useState([]);
+    const [isScheduledPanelOpen, setIsScheduledPanelOpen] = useState(false);
 
     const send = async (event) => {
         event?.preventDefault();
@@ -56,8 +66,8 @@ const ChatContainer = () => {
 
     const confirmDelete = async () => {
         if (!deleteTarget) return;
-        await deleteMessage(deleteTarget);
-        setDeleteTarget(null);
+        const deleted = await deleteMessage(deleteTarget);
+        if (deleted) setDeleteTarget(null);
     };
 
     const handleMessageKeyDown = (event) => {
@@ -68,15 +78,25 @@ const ChatContainer = () => {
     };
 
     const polishDraft = async () => {
-        if (!input.trim()) return toast.error("Write a message first");
+        if (!input.trim()) {
+            setAiError("Write a message first to use AI polish.");
+            return toast.error("Write a message first");
+        }
+
+        setAiError("");
         setIsPolishing(true);
         try {
             const { data } = await axios.post("/api/ai/polish-message", { text: input });
-            if (!data.success) return toast.error(data.message || "Could not polish this draft");
+            if (!data.success) {
+                setAiError(data.message || "Could not polish this draft");
+                return toast.error(data.message || "Could not polish this draft");
+            }
             setAiSummary({ original: input, summary: data.text, mode: "original" });
             toast.success("AI summary ready — review it before using");
         } catch (error) {
-            toast.error(error.response?.data?.message || "Could not polish this draft");
+            const message = error?.response?.data?.message || error?.message || "Could not polish this draft";
+            setAiError(message);
+            toast.error(message);
         } finally {
             setIsPolishing(false);
         }
@@ -86,6 +106,60 @@ const ChatContainer = () => {
         if (!aiSummary) return;
         setInput(aiSummary.summary);
         setAiSummary((summary) => ({ ...summary, mode: "summary" }));
+    };
+
+    const loadScheduledMessages = async () => {
+        if (!selectedUser) {
+            setScheduledMessages([]);
+            return;
+        }
+
+        const messages = await getScheduledMessages();
+        if (Array.isArray(messages)) {
+            setScheduledMessages(messages.filter((message) => message.receiverId?._id === selectedUser._id));
+        }
+    };
+
+    const handleScheduleMessage = async (scheduledFor) => {
+        if (!input.trim()) return toast.error("Write a message first");
+        const scheduled = await scheduleMessage(selectedUser._id, { text: input, scheduledFor });
+        if (scheduled) {
+            setInput("");
+            setAiSummary(null);
+            loadScheduledMessages();
+            setIsScheduledPanelOpen(true);
+        }
+    };
+
+    const openScheduledPanel = () => {
+        setIsScheduledPanelOpen(true);
+        loadScheduledMessages();
+    };
+
+    const handleSendScheduledNow = async (scheduled) => {
+        const delivered = await sendScheduledMessageNow(scheduled._id);
+        if (delivered && selectedUser?._id === scheduled.receiverId?._id) {
+            setMessages((prevMessages) => [...prevMessages, delivered]);
+        }
+        loadScheduledMessages();
+    };
+
+    const handleCancelScheduled = async (scheduled) => {
+        const success = await cancelScheduledMessage(scheduled._id);
+        if (success) loadScheduledMessages();
+    };
+
+    const handleEditScheduled = async (scheduled, scheduledFor) => {
+        const updated = await updateScheduledMessage(scheduled._id, { scheduledFor });
+        if (updated) {
+            await loadScheduledMessages();
+            return true;
+        }
+        return false;
+    };
+
+    const handleCloseScheduledPanel = () => {
+        setIsScheduledPanelOpen(false);
     };
 
     const revertToOriginal = () => {
@@ -210,7 +284,10 @@ const ChatContainer = () => {
     };
 
     useEffect(() => {
-        if (selectedUser) getMessages(selectedUser._id);
+        if (selectedUser) {
+            getMessages(selectedUser._id);
+            loadScheduledMessages();
+        }
     }, [selectedUser]);
 
     useEffect(() => {
@@ -256,6 +333,7 @@ const ChatContainer = () => {
                 onVoiceCall={() => callPlaceholder("Voice")}
                 onVideoCall={() => callPlaceholder("Video")}
                 onSearch={() => toast("In-chat search will arrive in a future update.", { icon: "🔍" })}
+                onOpenScheduledMessages={openScheduledPanel}
             />
 
             <div ref={audioListRef} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
@@ -296,6 +374,8 @@ const ChatContainer = () => {
                 onKeyDown={handleMessageKeyDown}
                 onPolish={polishDraft}
                 aiSummary={aiSummary}
+                aiError={aiError}
+                onDismissAiError={() => setAiError("")}
                 onUseSummary={useSummary}
                 onRevertToOriginal={revertToOriginal}
                 onCopySummary={copySummary}
@@ -311,7 +391,16 @@ const ChatContainer = () => {
                 setAttachmentMenuOpen={setAttachmentMenuOpen}
                 onSendImage={sendImage}
                 onSendDocument={sendDocument}
+                onSchedule={handleScheduleMessage}
                 disabledAttach={isUploadingVoice}
+            />
+            <ScheduledMessagesPanel
+                open={isScheduledPanelOpen}
+                onClose={handleCloseScheduledPanel}
+                scheduledMessages={scheduledMessages}
+                onEdit={handleEditScheduled}
+                onCancel={handleCancelScheduled}
+                onSendNow={handleSendScheduledNow}
             />
 
             <ConfirmModal

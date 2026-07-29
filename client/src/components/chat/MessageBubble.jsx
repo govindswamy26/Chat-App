@@ -12,11 +12,27 @@ const MessageBubble = ({ msg, isMine, onDelete, onAudioPlay }) => {
         }
     };
 
+    const requestDeletion = () => {
+        if (!msg?._id) {
+            toast.error("This message cannot be deleted");
+            return;
+        }
+        onDelete?.(msg._id);
+    };
+
     if (msg?.isDeleted) {
         return (
-            <p className="px-4 py-2.5 rounded-[var(--radius-lg)] text-sm italic text-[var(--color-muted)] bg-[var(--color-bg-elevated)]/80">
-                This message was deleted
-            </p>
+            <motion.div
+                layout
+                initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className={`message-bubble ${isMine ? "mine" : "other"}`}
+            >
+                <p className="px-4 py-2.5 rounded-[var(--radius-lg)] text-sm italic text-[var(--color-muted)] bg-[var(--color-bg-elevated)]/80">
+                    This message was deleted
+                </p>
+            </motion.div>
         );
     }
 
@@ -66,13 +82,36 @@ const MessageBubble = ({ msg, isMine, onDelete, onAudioPlay }) => {
             initial={{ opacity: 0, y: 10, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className={`message-bubble ${isMine ? "mine" : "other"}`}
+            className={`message-bubble group ${isMine ? "mine" : "other"}`}
         >
             {content}
 
             <div className="message-meta">
                 <span>{formatMessageTime(msg?.createdAt)}</span>
                 {isMine && msg?.seen && <CheckCheck className="w-4 h-4 text-[var(--color-primary)]" aria-label="Seen" />}
+            </div>
+
+            <div className="mt-1 flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                {msg?.text && (
+                    <button
+                        type="button"
+                        onClick={copyText}
+                        className="icon-btn h-7 w-7"
+                        aria-label="Copy message"
+                    >
+                        <Copy className="w-3.5 h-3.5" />
+                    </button>
+                )}
+                {isMine && (
+                    <button
+                        type="button"
+                        onClick={requestDeletion}
+                        className="icon-btn h-7 w-7 text-[var(--color-error)] hover:bg-[var(--color-error)]/10"
+                        aria-label="Delete message for everyone"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                )}
             </div>
 
         </motion.div>

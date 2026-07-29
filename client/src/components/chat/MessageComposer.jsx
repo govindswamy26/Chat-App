@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Film, Image, Mic, Paperclip, Send, Smile, Sparkles, Square } from "lucide-react";
+import { CalendarDays, Film, Image, Mic, Paperclip, Send, Smile, Sparkles, Square } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import Button from "../ui/Button";
 import Tooltip from "../ui/Tooltip";
+import ScheduleMessageModal from "./ScheduleMessageModal";
 
 const QUICK_EMOJIS = ["😀", "😂", "❤️", "👍", "🔥", "✨", "🎉", "🙏"];
 
@@ -18,6 +19,8 @@ const MessageComposer = ({
     onRevertToOriginal,
     onCopySummary,
     onDismissSummary,
+    aiError,
+    onDismissAiError,
     isPolishing,
     isRecording,
     recordingSeconds,
@@ -29,11 +32,13 @@ const MessageComposer = ({
     setAttachmentMenuOpen,
     onSendImage,
     onSendDocument,
+    onSchedule,
     disabledAttach,
 }) => {
     const textareaRef = useRef(null);
     const composerRef = useRef(null);
     const [emojiOpen, setEmojiOpen] = useState(false);
+    const [scheduleOpen, setScheduleOpen] = useState(false);
 
     useEffect(() => {
         const el = textareaRef.current;
@@ -111,6 +116,16 @@ const MessageComposer = ({
                 </div>
             )}
             <div ref={composerRef} className="flex flex-wrap items-center gap-3 p-3 bg-[var(--composer-bg)] border border-[var(--color-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
+                {aiError && (
+                    <div className="w-full mb-3 rounded-[var(--radius-xl)] border border-[var(--color-error)] bg-[var(--color-error)]/10 p-3 text-sm text-[var(--color-error)]">
+                        <div className="flex items-start justify-between gap-3">
+                            <p>{aiError}</p>
+                            <button type="button" onClick={onDismissAiError} className="font-semibold hover:text-[var(--color-text)]">
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div className="relative">
                     <Tooltip label="Attach file">
                         <button
@@ -241,6 +256,11 @@ const MessageComposer = ({
                                 <Mic className="w-5 h-5" />
                             </button>
                         </Tooltip>
+                        <Tooltip label="Schedule for later">
+                            <button type="button" onClick={() => setScheduleOpen(true)} className="icon-btn" aria-label="Send later">
+                                <CalendarDays className="w-5 h-5" />
+                            </button>
+                        </Tooltip>
                         <Tooltip label="Send">
                             <button type="submit" className="w-12 h-12 rounded-[var(--radius-xl)] btn-primary grid place-items-center" aria-label="Send message">
                                 <Send className="w-5 h-5" />
@@ -249,6 +269,15 @@ const MessageComposer = ({
                     </>
                 )}
             </div>
+            <ScheduleMessageModal
+                open={scheduleOpen}
+                onClose={() => setScheduleOpen(false)}
+                draft={input}
+                onSchedule={(scheduledFor) => {
+                    onSchedule?.(scheduledFor);
+                    setScheduleOpen(false);
+                }}
+            />
         </form>
     );
 };

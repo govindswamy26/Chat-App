@@ -1,16 +1,17 @@
-import { ArrowLeft, Info, Phone, Search, Video } from "lucide-react";
+import { ArrowLeft, Clock3, Phone, Search, Video } from "lucide-react";
 import Avatar from "../ui/Avatar";
 import CallActionButton from "./CallActionButton";
+import Dropdown, { DropdownItem } from "../ui/Dropdown";
 
 const ChatHeader = ({
     user,
     isOnline,
     onBack,
     onToggleProfile,
-    isProfileOpen,
     onVoiceCall,
     onVideoCall,
     onSearch,
+    onOpenScheduledMessages,
     showBack,
 }) => {
     return (
@@ -33,9 +34,9 @@ const ChatHeader = ({
             </button>
             <div className="flex items-center gap-1 shrink-0">
                 <CallActionButton icon={Search} label="Search in chat" onClick={onSearch} />
+                <CallActionButton icon={Clock3} label="View scheduled messages" onClick={onOpenScheduledMessages} />
                 <CallActionButton icon={Phone} label="Start voice call" onClick={onVoiceCall} />
                 <CallActionButton icon={Video} label="Start video call" onClick={onVideoCall} />
-                <CallActionButton icon={Info} label="Contact details" onClick={onToggleProfile} active={isProfileOpen} />
             </div>
         </header>
     );
