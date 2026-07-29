@@ -113,31 +113,24 @@ const Sidebar = () => {
     return (
         <>
             <aside className="min-h-0 flex flex-col p-4 sm:p-5 h-full">
-                <div className="flex items-center gap-3 pb-1">
-                    <img src={assets.logo_icon} alt="QuickChat logo" className="w-10 h-10 rounded-2xl bg-[var(--color-card)] p-2" />
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">QuickChat</p>
+                <div className="flex items-center gap-3 pb-1 sidebar-brand">
+                    <img src={assets.logo_icon} alt="QuickChat logo" className="w-8 h-8 rounded-lg bg-[var(--color-card)] p-1" />
                 </div>
 
             <div className="sidebar-profile-card">
-                <div className="flex items-center justify-between gap-3">
-                    <button type="button" onClick={() => navigate("/profile")} className="flex items-center gap-3 text-left rounded-[var(--radius-xl)] p-3 bg-[var(--color-surface)] hover:bg-[var(--color-card)] transition flex-1">
-                        <Avatar src={authUser?.profilePic || assets.avatar_icon} alt={authUser?.fullName} size="md" online={onlineUsers.includes(authUser?._id)} />
-                        <div className="min-w-0">
-                            <p className="text-sm font-semibold truncate">{authUser?.fullName}</p>
-                            <p className="text-[0.75rem] text-[var(--color-muted)] mt-0.5">Online · Available</p>
-                        </div>
-                    </button>
+                <div className="flex items-center gap-3">
                     <button
                         type="button"
-                        onClick={confirmLogout}
-                        className="btn btn-secondary h-10 px-3 text-sm"
+                        onClick={() => navigate("/profile")}
+                        title={authUser?.fullName}
+                        className="p-1 rounded-full bg-transparent hover:bg-[var(--color-card)] transition"
                     >
-                        Logout
+                        <Avatar src={authUser?.profilePic || assets.avatar_icon} alt={authUser?.fullName} size="md" online={onlineUsers.includes(authUser?._id)} />
                     </button>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="metric-chip">Friends {friendData.friendCount}</span>
-                    <span className="metric-chip">Chats {users.length}</span>
+                    <div className="min-w-0 hidden md:block">
+                        <p className="text-sm font-semibold truncate">{authUser?.fullName}</p>
+                        <p className="text-xs text-[var(--color-muted)] mt-0.5">Online · Available</p>
+                    </div>
                 </div>
             </div>
 

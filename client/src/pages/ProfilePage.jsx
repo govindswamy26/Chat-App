@@ -35,7 +35,7 @@ const SettingCard = ({ icon: Icon, title, description, children }) => (
 );
 
 const ProfilePage = () => {
-    const { authUser, updateProfile } = useContext(AuthContext);
+    const { authUser, updateProfile, logout } = useContext(AuthContext);
     const { friendData } = useContext(ChatContext);
     const { theme, setTheme } = useTheme();
     const [selectedImg, setSelectedImg] = useState(null);
@@ -79,6 +79,11 @@ const ProfilePage = () => {
                     </div>
 
                     <div className="px-6 sm:px-10 pb-10 -mt-14 relative">
+                        <div className="absolute right-6 top-6">
+                            <Button variant="secondary" onClick={() => { logout(); navigate('/login'); }} className="py-2 px-3 text-sm">
+                                Logout
+                            </Button>
+                        </div>
                         <div className="flex flex-col sm:flex-row sm:items-end gap-5">
                             <div className="relative shrink-0">
                                 <Avatar src={preview} alt={name} size="xl" className="ring-4 ring-[var(--color-card)]" />
